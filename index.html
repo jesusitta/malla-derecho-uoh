@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Malla Curricular Derecho</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .grid {
+      display: flex;
+      gap: 20px;
+      overflow-x: auto;
+    }
+    .column {
+      min-width: 220px;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .column h2 {
+      text-align: center;
+      color: #555;
+    }
+    .subject {
+      background: #dceeff;
+      margin: 6px 0;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      position: relative;
+      transition: 0.3s;
+    }
+    .subject.completed {
+      background: #b7e4c7;
+      text-decoration: line-through;
+    }
+    .subject.locked {
+      background: #eee;
+      cursor: not-allowed;
+      color: #999;
+    }
+    .subject:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: #333;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      font-size: 0.8em;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Malla Curricular Derecho</h1>
+  <div class="grid" id="malla"></div>
+  <script>
+    const materias = {
+      '1° semestre': [
+        'Fundamentos del derecho privado',
+        'Lenguaje del derecho',
+        'Fundamentos del derecho público',
+        'Historias de las ideas e instituciones',
+        'Sociologia',
+        'Taller de expresión oral y escrita'
+      ],
+      '2° semestre': [
+        'Teoría del sistema jurídico',
+        'Criminología',
+        'Derecho y economía',
+        'Razonamiento jurídico',
+        'Metodología de la investigación',
+        'Tradiciones juridicas comparadas'
+      ],
+      '3° semestre': [
+        'Privado 1',
+        'Procesal 1',
+        'Penal 1',
+        'Constitucional 1',
+        'Validez espacial temporal',
+        'Ingles 1'
+      ],
+      '4° semestre': [
+        'Privado 2',
+        'Procesal 2',
+        'Penal 2',
+        'Constitucional 2',
+        'Ingles 2',
+        'Internacional'
+      ],
+      '5° semestre': [
+        'Privado 3',
+        'Procesal 3',
+        'Penal 3',
+        'Administrativo 1',
+        'Ingles 3',
+        'Laboral 1'
+      ],
+      '6° semestre': [
+        'Privado 4',
+        'Procesal 4',
+        'Penal 4',
+        'Administrativo 2',
+        'Laboral 2',
+        'Ingles 4'
+      ],
+      '7° semestre': [
+        'Privado 5',
+        'Procesal especial',
+        'Procesal penal',
+        'Tributario',
+        'Ingles 5',
+        'Comercial 1'
+      ],
+      '8° semestre': [
+        'Comercial 2',
+        'Privado 6',
+        'Clinica jurídica 1',
+        'Etica profesional',
+        'Estrategias y técnicas de litigación',
+        'Ingles 6'
+      ],
+      '9° semestre': [
+        'Resolución de Casos',
+        'Instituciones Derecho Civil: Bienes y Personas',
+        'Instituciones Derecho Civil: Obligaciones',
+        'Instituciones Derecho Constitucional',
+        'Instituciones Derecho Procesal',
+        'Clínica Jurídica 2'
+      ]
+    };
+
+    const dependencias = {
+      'Privado 2': ['Privado 1'],
+      'Privado 3': ['Privado 2'],
+      'Privado 4': ['Privado 3'],
+      'Privado 5': ['Privado 4'],
+      'Privado 6': ['Privado 5'],
+      'Procesal 2': ['Procesal 1'],
+      'Procesal 3': ['Procesal 2'],
+      'Procesal 4': ['Procesal 3'],
+      'Procesal especial': ['Procesal 4'],
+      'Procesal penal': ['Procesal 4'],
+      'Penal 2': ['Penal 1'],
+      'Penal 3': ['Penal 2'],
+      'Penal 4': ['Penal 3'],
+      'Administrativo 2': ['Administrativo 1'],
+      'Constitucional 2': ['Constitucional 1'],
+      'Comercial 1': ['Privado 4'],
+      'Comercial 2': ['Comercial 1'],
+      'Tributario': ['Administrativo 1'],
+      'Clinica jurídica 1': ['Privado 6','Procesal 4','Penal 4'],
+      'Clinica Jurídica 2': ['Clinica jurídica 1'],
+      'Etica profesional': ['Privado 6'],
+      'Estrategias y técnicas de litigación': ['Privado 6'],
+      'Resolución de Casos': ['Privado 6'],
+      'Instituciones Derecho Civil: Bienes y Personas': ['Privado 6'],
+      'Instituciones Derecho Civil: Obligaciones': ['Privado 6'],
+      'Instituciones Derecho Constitucional': ['Constitucional 2'],
+      'Instituciones Derecho Procesal': ['Procesal especial','Procesal penal']
+    };
+
+    const completadas = JSON.parse(localStorage.getItem('materias_aprobadas')) || [];
+
+    function guardarProgreso() {
+      localStorage.setItem('materias_aprobadas', JSON.stringify(completadas));
+    }
+
+    function crearMalla() {
+      const contenedor = document.getElementById('malla');
+      contenedor.innerHTML = '';
+
+      for (const ciclo in materias) {
+        const columna = document.createElement('div');
+        columna.className = 'column';
+
+        const titulo = document.createElement('h2');
+        titulo.textContent = ciclo;
+        columna.appendChild(titulo);
+
+        materias[ciclo].forEach(materia => {
+          const div = document.createElement('div');
+          div.className = 'subject';
+          div.textContent = materia;
+
+          const requisitos = dependencias[materia];
+          const cumplido = !requisitos || requisitos.every(r => completadas.includes(r));
+
+          if (!cumplido) {
+            div.classList.add('locked');
+            div.setAttribute('data-tooltip', 'Falta: ' + requisitos.filter(r => !completadas.includes(r)).join(', '));
+          } else {
+            div.addEventListener('click', () => {
+              if (div.classList.contains('completed')) {
+                div.classList.remove('completed');
+                const idx = completadas.indexOf(materia);
+                if (idx > -1) completadas.splice(idx, 1);
+              } else {
+                div.classList.add('completed');
+                completadas.push(materia);
+              }
+              guardarProgreso();
+              crearMalla();
+            });
+          }
+
+          if (completadas.includes(materia)) div.classList.add('completed');
+
+          columna.appendChild(div);
+        });
+
+        contenedor.appendChild(columna);
+      }
+    }
+
+    crearMalla();
+  </script>
+</body>
+</html>
